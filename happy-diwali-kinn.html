@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>A Sweet Diwali Story under the Northern Lights ✨</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js (r128) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- OrbitControls -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      background-color: #040814;
+      font-family: 'Quicksand', sans-serif;
+    }
+    #webgl-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      display: block;
+    }
+    .festive-title {
+      font-family: 'Cinzel Decorative', cursive, serif;
+    }
+    /* Aurora glow badge */
+    .aurora-badge {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(139, 92, 246, 0.25));
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+    .glass-panel {
+      background: rgba(10, 15, 30, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(52, 211, 153, 0.35);
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
+    }
+    /* Dimple leak pulse */
+    @keyframes dimpleLeakPulse {
+      0% { transform: scale(1); filter: drop-shadow(0 0 4px #38bdf8); }
+      50% { transform: scale(1.15); filter: drop-shadow(0 0 12px #38bdf8); }
+      100% { transform: scale(1); filter: drop-shadow(0 0 4px #38bdf8); }
+    }
+    .glow-leak {
+      animation: dimpleLeakPulse 1.2s infinite ease-in-out;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(0px) scale(0.9); opacity: 0; }
+      20% { opacity: 1; }
+      80% { opacity: 1; }
+      100% { transform: translateY(-70px) scale(1.3); opacity: 0; }
+    }
+    .floating-emote {
+      animation: floatUp 1.4s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="relative">
+
+  <!-- 3D Canvas -->
+  <canvas id="webgl-canvas"></canvas>
+
+  <!-- Top Bar: Festive Indicators & Controls -->
+  <div class="fixed top-4 left-4 right-4 z-20 flex justify-between items-center pointer-events-none">
+    <div class="flex items-center space-x-2 aurora-badge px-4 py-2 rounded-full shadow-lg">
+      <span class="text-xl">🌌</span>
+      <span class="text-emerald-200 text-xs sm:text-sm font-semibold tracking-wide">Northern Lights &amp; Diwali Night</span>
+    </div>
+
+    <div class="flex space-x-2 pointer-events-auto">
+      <button id="sound-toggle-btn" class="glass-panel hover:bg-emerald-500/20 text-emerald-300 p-2.5 rounded-full shadow transition active:scale-95 text-xs flex items-center justify-center w-10 h-10" title="Sound Mute/Unmute">
+        🔊
+      </button>
+      <button id="cam-toggle-btn" class="glass-panel hover:bg-emerald-500/20 text-emerald-200 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow transition active:scale-95 flex items-center space-x-1">
+        <span>🎥</span>
+        <span id="cam-mode-text">Free Cam</span>
+      </button>
+      <button id="restart-story-btn" class="glass-panel hover:bg-emerald-500/20 text-emerald-200 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow transition active:scale-95 flex items-center space-x-1">
+        <span>🔄</span>
+        <span>Replay</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Story Subtitles & Dialogue System with Speaker Identity -->
+  <div class="fixed bottom-6 left-0 right-0 z-20 flex flex-col items-center px-4 pointer-events-none">
+    <!-- Story Dialogue Card -->
+    <div id="narrator-card" class="glass-panel px-5 sm:px-7 py-4 rounded-3xl max-w-xl w-full pointer-events-auto transition-all duration-300 relative border border-emerald-400/40">
+      
+      <!-- Speaker Pill -->
+      <div class="flex justify-between items-center mb-2.5">
+        <div id="speaker-badge" class="flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-bold tracking-wide transition-all duration-200 bg-sky-500/20 text-sky-300 border border-sky-400/30">
+          <span id="speaker-icon">👦🏽</span>
+          <span id="speaker-name">Roo</span>
+        </div>
+      </div>
+
+      <!-- Dialogue Bubble Content -->
+      <div class="min-h-[58px] flex items-center">
+        <p id="narrator-body" class="text-emerald-50 text-sm sm:text-base leading-relaxed transition-opacity duration-200 font-medium w-full">
+          "I knew it that you must be somewhere here only watching the northern lights, Kinn! ✨"
+        </p>
+      </div>
+
+      <!-- Step Navigation Buttons -->
+      <div class="mt-4 pt-3 border-t border-emerald-500/20 flex items-center justify-between">
+        <button id="prev-step-btn" class="px-3.5 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-emerald-300 text-xs font-semibold transition active:scale-95 border border-slate-600 disabled:opacity-40 disabled:pointer-events-none">
+          ◀ Previous
+        </button>
+
+        <!-- Progress bar filling for auto-advance or pause state -->
+        <div class="flex-1 mx-4 bg-slate-800/80 rounded-full h-1.5 overflow-hidden">
+          <div id="step-progress-bar" class="bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-300 h-full w-0 transition-all duration-300"></div>
+        </div>
+
+        <button id="next-step-btn" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:brightness-110 text-slate-950 text-xs font-bold transition active:scale-95 shadow-md shadow-emerald-500/30 flex items-center space-x-1">
+          <span id="next-btn-text">Next</span>
+          <span>▶</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Dynamic Screen Overlay for Floating Emojis -->
+  <div id="emote-container" class="fixed inset-0 pointer-events-none z-10 overflow-hidden"></div>
+
+  <!-- Final Greeting Card Overlay -->
+  <div id="finale-modal" class="fixed inset-0 z-30 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-700 ease-out">
+    <div class="glass-panel rounded-3xl p-6 sm:p-8 max-w-md w-full text-center relative border-2 border-emerald-400/60 shadow-[0_0_60px_rgba(16,185,129,0.35)] transform scale-95 transition-transform duration-500">
+      
+      <!-- Top festive icons -->
+      <div class="absolute -top-7 left-1/2 transform -translate-x-1/2 flex items-center space-x-3 text-3xl">
+        <span class="animate-bounce">🪔</span>
+        <span class="text-4xl">🌌</span>
+        <span class="animate-bounce" style="animation-delay: 0.2s">🪔</span>
+      </div>
+
+      <div class="mt-4">
+        <h2 class="festive-title text-2xl sm:text-3xl text-emerald-300 font-bold mb-1 tracking-wide">
+          Happy Diwali, Kinn!
+        </h2>
+        <h4 class="text-teal-200/90 text-sm font-semibold uppercase tracking-wider mb-4">
+          To You &amp; Your Family ✨🪔
+        </h4>
+
+        <!-- Exact customized message specified -->
+        <div class="bg-slate-900/80 rounded-2xl p-4 border border-emerald-400/50 text-emerald-100 text-sm sm:text-base leading-relaxed my-4 shadow-inner">
+          “Your <strong>kaju katli</strong> is safe with me, don’t worry! When you come to India, I’ll hand it over to you! 🍬✨”
+        </div>
+
+        <p class="text-emerald-300 font-semibold text-sm sm:text-base mb-6 leading-relaxed">
+          I hope you like it, Kinn! ❤️✨
+        </p>
+
+        <div class="flex justify-center">
+          <button id="modal-replay-btn" class="bg-gradient-to-r from-emerald-400 via-teal-400 to-amber-300 text-slate-950 font-bold py-3 px-8 rounded-xl shadow-lg shadow-emerald-500/30 hover:brightness-110 active:scale-95 text-sm flex items-center justify-center space-x-2">
+            <span>🔄</span>
+            <span>Play Again</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio Unlock / Start Gate -->
+  <div id="tap-to-start" class="fixed inset-0 z-40 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-panel p-6 sm:p-8 rounded-3xl text-center max-w-sm w-full border border-emerald-400/40 shadow-2xl">
+      <div class="text-5xl mb-3 animate-pulse">🪔</div>
+      <h1 class="festive-title text-3xl sm:text-4xl font-bold text-emerald-300 mb-6 tracking-wide">
+        Happy Diwali Kinn ✨
+      </h1>
+      <button id="start-app-btn" class="w-full bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-300 text-slate-950 font-bold py-3.5 px-6 rounded-2xl shadow-xl shadow-emerald-400/30 hover:brightness-110 active:scale-95 transition text-sm uppercase tracking-wider">
+        ✨ Start
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* =====================================================================
+       1. SYNTHESIZED WEB AUDIO SYSTEM (Zero External MP3 Dependencies)
+       ===================================================================== */
+    class SoundFX {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playSparkle() {
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + i * 0.08);
+          gain.gain.setValueAtTime(0.08, now + i * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.08);
+          osc.stop(now + i * 0.08 + 0.38);
+        });
+      }
+      playEatChomp() {
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        for (let i = 0; i < 3; i++) {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(320 - i * 40, now + i * 0.14);
+          osc.frequency.exponentialRampToValueAtTime(140, now + i * 0.14 + 0.08);
+          gain.gain.setValueAtTime(0.12, now + i * 0.14);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.14 + 0.1);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.14);
+          osc.stop(now + i * 0.14 + 0.12);
+        }
+      }
+      playWaterSplash() {
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const bufferSize = this.ctx.sampleRate * 0.12;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.25));
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(1200 + Math.random() * 600, now);
+        filter.Q.value = 3.5;
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start(now);
+      }
+      playLaughJoy() {
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        [440, 520, 480, 560, 490].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.13);
+          osc.frequency.exponentialRampToValueAtTime(freq * 0.85, now + idx * 0.13 + 0.09);
+          gain.gain.setValueAtTime(0.09, now + idx * 0.13);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.13 + 0.11);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.13);
+          osc.stop(now + idx * 0.13 + 0.12);
+        });
+      }
+      playSparklerFlicker() {
+        if (this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const bufferSize = this.ctx.sampleRate * 0.04;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'highpass';
+        filter.frequency.setValueAtTime(2600, now);
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.045, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start(now);
+      }
+      playFinaleFanfare() {
+        if (this.muted || !this.ctx) return;
+        const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
+        const now = this.ctx.currentTime;
+        notes.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + i * 0.12);
+          gain.gain.setValueAtTime(0.12, now + i * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.8);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + i * 0.12);
+          osc.stop(now + i * 0.12 + 0.85);
+        });
+      }
+    }
+    const audio = new SoundFX();
+
+    /* =====================================================================
+       2. THREE.JS SCENE, CAMERA, LIGHTS & CONTROLS
+       ===================================================================== */
+    const canvas = document.getElementById('webgl-canvas');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x040814, 0.006); // Softened fog so Northern Lights are clearly visible
+
+    const cameraTarget = new THREE.Vector3(0, 1.8, 0);
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0.0, 2.8, 6.2);
+    camera.lookAt(cameraTarget);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 - 0.03;
+    controls.minDistance = 2.5;
+    controls.maxDistance = 14;
+    controls.target.copy(cameraTarget);
+    controls.enabled = false; // Defaults to scripted auto-cam
+
+    // Ambient, Front Key & Fill Lights for Characters
+    const hemiLight = new THREE.HemisphereLight(0xecfdf5, 0x0f172a, 0.75);
+    scene.add(hemiLight);
+
+    const frontKeyLight = new THREE.DirectionalLight(0xfff7ed, 1.3);
+    frontKeyLight.position.set(1.5, 4.0, 5.5);
+    frontKeyLight.target.position.set(0, 1.5, 0);
+    scene.add(frontKeyLight);
+    scene.add(frontKeyLight.target);
+
+    const charFillLight = new THREE.DirectionalLight(0x67e8f9, 0.7);
+    charFillLight.position.set(-3.5, 3.0, 4.0);
+    scene.add(charFillLight);
+
+    const moonLight = new THREE.DirectionalLight(0xa7f3d0, 0.6);
+    moonLight.position.set(-6, 12, -8);
+    scene.add(moonLight);
+
+    /* =====================================================================
+       3. NORTHERN LIGHTS (AURORA BOREALIS) SKY DOME & ENVIRONMENT
+       ===================================================================== */
+    const auroraUniforms = {
+      uTime: { value: 0 }
+    };
+    const auroraVertex = `
+      varying vec3 vWorldPosition;
+      void main() {
+        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+        vWorldPosition = worldPosition.xyz;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `;
+    const auroraFragment = `
+      uniform float uTime;
+      varying vec3 vWorldPosition;
+      void main() {
+        vec3 p = normalize(vWorldPosition);
+        float h = p.y;
+        
+        // Deep midnight Arctic atmosphere base
+        vec3 col = mix(vec3(0.01, 0.02, 0.06), vec3(0.002, 0.005, 0.015), clamp(h, 0.0, 1.0));
+        
+        if (h > -0.05) {
+          // Dynamic flowing ribbon waves
+          float t = uTime * 0.4;
+          float wave1 = sin(p.x * 6.0 + t + sin(p.z * 5.0 + t * 0.5)) * 0.5 + 0.5;
+          float wave2 = sin(p.x * 12.0 - t * 0.8 + p.z * 8.0) * 0.5 + 0.5;
+          float wave3 = cos(p.x * 3.5 + p.z * 3.0 + t * 0.3) * 0.5 + 0.5;
+          
+          // Combine waves into glowing curtains
+          float curtain1 = pow(wave1 * wave2, 1.5) * 1.8;
+          float curtain2 = pow(wave2 * wave3, 2.0) * 1.5;
+          
+          // Altitude gradient for aurora curtains
+          float altitudeFade1 = smoothstep(-0.02, 0.28, h) * smoothstep(0.85, 0.35, h);
+          float altitudeFade2 = smoothstep(0.12, 0.45, h) * smoothstep(0.95, 0.5, h);
+          
+          // Brilliant Northern Lights palette: Vivid Emerald, Electric Cyan, and Violet / Magenta
+          vec3 neonGreen = vec3(0.08, 0.98, 0.52);
+          vec3 electricCyan = vec3(0.12, 0.85, 1.0);
+          vec3 mysticViolet = vec3(0.72, 0.22, 0.98);
+          
+          vec3 aurColor1 = mix(neonGreen, electricCyan, sin(p.x * 3.0 + t * 0.5) * 0.5 + 0.5);
+          vec3 aurColor2 = mix(electricCyan, mysticViolet, cos(p.z * 4.0 + t * 0.4) * 0.5 + 0.5);
+          
+          col += aurColor1 * curtain1 * altitudeFade1 * 2.2;
+          col += aurColor2 * curtain2 * altitudeFade2 * 1.8;
+        }
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `;
+
+    const skyGeo = new THREE.SphereGeometry(90, 48, 32);
+    const skyMat = new THREE.ShaderMaterial({
+      vertexShader: auroraVertex,
+      fragmentShader: auroraFragment,
+      uniforms: auroraUniforms,
+      side: THREE.BackSide,
+      fog: false // Keep the sky completely unhindered by scene fog
+    });
+    const skyDome = new THREE.Mesh(skyGeo, skyMat);
+    scene.add(skyDome);
+
+    // Stars Field
+    const starGeo = new THREE.BufferGeometry();
+    const starCount = 350;
+    const starPos = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+      const u = Math.random();
+      const v = Math.random();
+      const theta = u * 2.0 * Math.PI;
+      const phi = Math.acos(2.0 * v - 1.0);
+      const r = 60 + Math.random() * 5;
+      starPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      starPos[i * 3 + 1] = Math.abs(r * Math.cos(phi)) + 3; // Keep above ground
+      starPos[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.8, transparent: true, opacity: 0.8 });
+    const stars = new THREE.Points(starGeo, starMat);
+    scene.add(stars);
+
+    // Courtyard Terrace Floor (Polished slate with rangoli decal)
+    const floorGeo = new THREE.CylinderGeometry(8.5, 8.5, 0.4, 48);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x111827,
+      roughness: 0.4,
+      metalness: 0.2
+    });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.position.y = -0.2;
+    scene.add(floor);
+
+    // Procedural Colorful Rangoli Floor Canvas Texture
+    function createRangoliTexture() {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 512;
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, 512, 512);
+
+      const cx = 256, cy = 256;
+      for (let r = 220; r >= 30; r -= 28) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.strokeStyle = (r % 56 === 0) ? '#10b981' : '#f59e0b';
+        ctx.lineWidth = 6;
+        ctx.stroke();
+      }
+
+      // Petals
+      const petals = 12;
+      for (let i = 0; i < petals; i++) {
+        const ang = (i / petals) * Math.PI * 2;
+        const px = cx + Math.cos(ang) * 110;
+        const py = cy + Math.sin(ang) * 110;
+        ctx.beginPath();
+        ctx.arc(px, py, 26, 0, Math.PI * 2);
+        ctx.fillStyle = (i % 2 === 0) ? '#ec4899' : '#06b6d4';
+        ctx.fill();
+        ctx.strokeStyle = '#fef08a';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, 38, 0, Math.PI * 2);
+      ctx.fillStyle = '#fbbf24';
+      ctx.fill();
+
+      return new THREE.CanvasTexture(c);
+    }
+    const rangoliPlane = new THREE.Mesh(
+      new THREE.PlaneGeometry(5.2, 5.2),
+      new THREE.MeshStandardMaterial({ map: createRangoliTexture(), transparent: true, roughness: 0.5 })
+    );
+    rangoliPlane.rotation.x = -Math.PI / 2;
+    rangoliPlane.position.y = 0.01;
+    scene.add(rangoliPlane);
+
+    // Glowing Clay Diyas around the floor rim
+    const diyas = [];
+    const diyaCount = 10;
+    for (let i = 0; i < diyaCount; i++) {
+      const ang = (i / diyaCount) * Math.PI * 2;
+      const rad = 4.2;
+      const x = Math.cos(ang) * rad;
+      const z = Math.sin(ang) * rad;
+
+      const diyaGroup = new THREE.Group();
+      diyaGroup.position.set(x, 0.02, z);
+
+      // Clay bowl
+      const bowl = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.18, 0.1, 0.1, 14),
+        new THREE.MeshStandardMaterial({ color: 0x9a3412, roughness: 0.8 })
+      );
+      bowl.position.y = 0.05;
+      diyaGroup.add(bowl);
+
+      // Flame
+      const flame = new THREE.Mesh(
+        new THREE.ConeGeometry(0.06, 0.18, 8),
+        new THREE.MeshBasicMaterial({ color: 0xffd54f })
+      );
+      flame.position.y = 0.18;
+      diyaGroup.add(flame);
+
+      // Point Light
+      const pLight = new THREE.PointLight(0xff9900, 1.2, 4.5);
+      pLight.position.y = 0.25;
+      diyaGroup.add(pLight);
+
+      scene.add(diyaGroup);
+      diyas.push({ pLight, flame, baseInt: 1.2, offset: Math.random() * 5 });
+    }
+
+    /* =====================================================================
+       4. ROBLOX-STYLE CHIBI CHARACTER BUILDER
+       ===================================================================== */
+    // Face Texture Generator for Kinn with prominent Dimples & Roo
+    function createFaceTexture(isGirl) {
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 256;
+      const ctx = c.getContext('2d');
+
+      // Base skin
+      ctx.fillStyle = isGirl ? '#ffe0bd' : '#c68642';
+      ctx.fillRect(0, 0, 256, 256);
+
+      if (isGirl) {
+        // Big cute anime-Roblox eyes
+        ctx.fillStyle = '#1e1b4b';
+        ctx.beginPath();
+        ctx.arc(80, 115, 22, 0, Math.PI * 2);
+        ctx.arc(176, 115, 22, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye glints
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(74, 108, 8, 0, Math.PI * 2);
+        ctx.arc(170, 108, 8, 0, Math.PI * 2);
+        ctx.arc(88, 122, 4, 0, Math.PI * 2);
+        ctx.arc(184, 122, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Cheerful smile
+        ctx.beginPath();
+        ctx.arc(128, 155, 30, 0.15 * Math.PI, 0.85 * Math.PI);
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = '#be185d';
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        // Blush
+        ctx.fillStyle = 'rgba(244, 63, 94, 0.35)';
+        ctx.beginPath();
+        ctx.ellipse(60, 156, 18, 10, 0, 0, Math.PI * 2);
+        ctx.ellipse(196, 156, 18, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // PROMINENT CHEEK DIMPLES
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = '#b91c1c';
+        // Left Dimple
+        ctx.beginPath();
+        ctx.arc(50, 160, 9, 1.2 * Math.PI, 1.8 * Math.PI);
+        ctx.stroke();
+        // Right Dimple (The leaking one!)
+        ctx.beginPath();
+        ctx.arc(206, 160, 9, 1.2 * Math.PI, 1.8 * Math.PI);
+        ctx.stroke();
+      } else {
+        // Roo / Wheatish complexion face
+        ctx.fillStyle = '#111827';
+        // Confident, warm Roblox eyes
+        ctx.beginPath();
+        ctx.arc(84, 118, 16, 0, Math.PI * 2);
+        ctx.arc(172, 118, 16, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(80, 112, 6, 0, Math.PI * 2);
+        ctx.arc(168, 112, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Big friendly smirk
+        ctx.beginPath();
+        ctx.arc(128, 150, 26, 0.1 * Math.PI, 0.9 * Math.PI);
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = '#451a03';
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
+
+      return new THREE.CanvasTexture(c);
+    }
+
+    function createRobloxCharacter(config) {
+      const root = new THREE.Group();
+
+      const skinMat = new THREE.MeshStandardMaterial({ color: config.skinColor, roughness: 0.6 });
+      const outfitMat = new THREE.MeshStandardMaterial({ color: config.outfitColor, roughness: 0.5 });
+      const accentMat = new THREE.MeshStandardMaterial({ color: config.accentColor, roughness: 0.3, metalness: 0.4 });
+      const hairMat = new THREE.MeshStandardMaterial({ color: config.hairColor, roughness: 0.7 });
+
+      // Torso (Classic blocky Roblox proportions)
+      const torsoGeo = new THREE.BoxGeometry(1.2, 1.25, 0.65);
+      const torso = new THREE.Mesh(torsoGeo, outfitMat);
+      torso.position.y = 1.65;
+      root.add(torso);
+
+      // Festive Sash / Gold Trim
+      const sash = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.22, 0.67), accentMat);
+      sash.position.y = -0.4;
+      torso.add(sash);
+
+      // Head
+      const headGeo = new THREE.BoxGeometry(0.95, 0.95, 0.9);
+      const faceTex = createFaceTexture(config.isGirl);
+      const headMaterials = [
+        skinMat, // right
+        skinMat, // left
+        skinMat, // top
+        skinMat, // bottom
+        new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.6 }), // front face
+        hairMat  // back
+      ];
+      const head = new THREE.Mesh(headGeo, headMaterials);
+      head.position.y = 1.15;
+      torso.add(head);
+
+      // Blocky Hair
+      const hairCap = new THREE.Mesh(new THREE.BoxGeometry(1.02, 0.32, 0.96), hairMat);
+      hairCap.position.y = 0.46;
+      head.add(hairCap);
+
+      if (config.isGirl) {
+        // Bangs & Pigtail side buns
+        const bangs = new THREE.Mesh(new THREE.BoxGeometry(0.98, 0.25, 0.2), hairMat);
+        bangs.position.set(0, 0.35, 0.46);
+        head.add(bangs);
+
+        const leftBun = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.35), hairMat);
+        leftBun.position.set(-0.6, 0.35, -0.05);
+        head.add(leftBun);
+
+        const rightBun = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.35), hairMat);
+        rightBun.position.set(0.6, 0.35, -0.05);
+        head.add(rightBun);
+      } else {
+        // Boy side tufts
+        const tuft = new THREE.Mesh(new THREE.BoxGeometry(1.02, 0.2, 0.98), hairMat);
+        tuft.position.set(0, 0.32, 0.05);
+        head.add(tuft);
+      }
+
+      // Left Arm
+      const armGeo = new THREE.BoxGeometry(0.42, 1.15, 0.42);
+      const leftArm = new THREE.Mesh(armGeo, skinMat);
+      leftArm.position.set(-0.85, 0.0, 0);
+      torso.add(leftArm);
+
+      // Left Sleeve
+      const sleeveLeft = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.55, 0.44), outfitMat);
+      sleeveLeft.position.y = 0.3;
+      leftArm.add(sleeveLeft);
+
+      // Right Arm
+      const rightArm = new THREE.Mesh(armGeo, skinMat);
+      rightArm.position.set(0.85, 0.0, 0);
+      torso.add(rightArm);
+
+      // Right Sleeve
+      const sleeveRight = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.55, 0.44), outfitMat);
+      sleeveRight.position.y = 0.3;
+      rightArm.add(sleeveRight);
+
+      // Right Hand socket for props
+      const rightHandSocket = new THREE.Group();
+      rightHandSocket.position.set(0, -0.55, 0.22);
+      rightArm.add(rightHandSocket);
+
+      // Left Leg
+      const legGeo = new THREE.BoxGeometry(0.48, 1.05, 0.48);
+      const leftLeg = new THREE.Mesh(legGeo, config.isGirl ? accentMat : outfitMat);
+      leftLeg.position.set(-0.32, -1.1, 0);
+      torso.add(leftLeg);
+
+      // Right Leg
+      const rightLeg = new THREE.Mesh(legGeo, config.isGirl ? accentMat : outfitMat);
+      rightLeg.position.set(0.32, -1.1, 0);
+      torso.add(rightLeg);
+
+      return {
+        root,
+        torso,
+        head,
+        leftArm,
+        rightArm,
+        leftLeg,
+        rightLeg,
+        rightHandSocket
+      };
+    }
+
+    // Spawn Kinn (Fair complexion, Maroon/Gold Lehenga, dimples)
+    const girl = createRobloxCharacter({
+      isGirl: true,
+      skinColor: 0xffe0bd,
+      outfitColor: 0x9f1239, // Festive deep maroon
+      accentColor: 0xf59e0b, // Gold border
+      hairColor: 0x1f1712
+    });
+    girl.root.position.set(-0.75, 0, 0);
+    girl.root.rotation.y = 0.35;
+    scene.add(girl.root);
+
+    // Spawn Roo (Gehu/Wheat complexion, Navy Blue/Emerald Kurta)
+    const boy = createRobloxCharacter({
+      isGirl: false,
+      skinColor: 0xc68642, // Gehu/Wheatish warm tan
+      outfitColor: 0x0369a1, // Royal Navy Silk Kurta
+      accentColor: 0xfbbf24, // Gold borders
+      hairColor: 0x111827
+    });
+    boy.root.position.set(0.75, 0, -4.5); // Starts walking in from just behind
+    boy.root.rotation.y = 0;
+    scene.add(boy.root);
+
+    /* =====================================================================
+       5. INTERACTIVE PROPS (Kaju Katli, Water Glass, Fuljhadis)
+       ===================================================================== */
+    // 1. Kaju Katli (Authentic diamond rhambus sweet with silver vark)
+    const kajuKatliProp = new THREE.Group();
+    const sweetShape = new THREE.Shape();
+    sweetShape.moveTo(0, 0.22);
+    sweetShape.lineTo(0.18, 0);
+    sweetShape.lineTo(0, -0.22);
+    sweetShape.lineTo(-0.18, 0);
+    sweetShape.closePath();
+
+    const extrudeSettings = { depth: 0.06, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.015, bevelThickness: 0.015 };
+    const kajuGeo = new THREE.ExtrudeGeometry(sweetShape, extrudeSettings);
+    // Silver foil + cashew paste material
+    const kajuMat = new THREE.MeshStandardMaterial({
+      color: 0xf5f3ea, // Cashew white
+      roughness: 0.25,
+      metalness: 0.55 // Glistening silver vark sheen
+    });
+    const kajuMesh = new THREE.Mesh(kajuGeo, kajuMat);
+    kajuMesh.rotation.x = Math.PI / 2;
+    kajuKatliProp.add(kajuMesh);
+    kajuKatliProp.visible = false;
+    scene.add(kajuKatliProp);
+
+    // 2. Glass of Water
+    const waterGlassProp = new THREE.Group();
+    const glassMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.14, 0.11, 0.38, 16),
+      new THREE.MeshPhysicalMaterial({
+        color: 0xffffff,
+        transmission: 0.9,
+        opacity: 1,
+        transparent: true,
+        roughness: 0.1,
+        ior: 1.45
+      })
+    );
+    const waterFillMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.12, 0.095, 0.28, 16),
+      new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.75, roughness: 0.1 })
+    );
+    waterFillMesh.position.y = -0.03;
+    waterGlassProp.add(glassMesh);
+    waterGlassProp.add(waterFillMesh);
+    waterGlassProp.visible = false;
+    scene.add(waterGlassProp);
+
+    // 3. Phuljhadi Sparklers for Both Characters
+    function createFuljhadi() {
+      const g = new THREE.Group();
+      // Thin metal wire handle
+      const wire = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.015, 0.015, 0.7, 8),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 })
+      );
+      wire.position.y = 0.35;
+      g.add(wire);
+
+      // Chemical spark coat top
+      const coat = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.025, 0.025, 0.35, 8),
+        new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.8 })
+      );
+      coat.position.y = 0.52;
+      g.add(coat);
+
+      // Tip emitter node
+      const tip = new THREE.Group();
+      tip.position.y = 0.7;
+      g.add(tip);
+
+      const sparkLight = new THREE.PointLight(0xffe066, 0, 4);
+      tip.add(sparkLight);
+
+      return { root: g, tip, sparkLight };
+    }
+
+    const girlFuljhadi = createFuljhadi();
+    girl.rightHandSocket.add(girlFuljhadi.root);
+    girlFuljhadi.root.rotation.x = Math.PI / 2.5;
+    girlFuljhadi.root.visible = false;
+
+    const boyFuljhadi = createFuljhadi();
+    boy.rightHandSocket.add(boyFuljhadi.root);
+    boyFuljhadi.root.rotation.x = Math.PI / 2.5;
+    boyFuljhadi.root.visible = false;
+
+    /* =====================================================================
+       6. PARTICLE ENGINES (Water Cheek Leak & Sparkler Sparks)
+       ===================================================================== */
+    // Water Leak Particle System
+    const WATER_COUNT = 140;
+    const waterGeo = new THREE.BufferGeometry();
+    const waterPos = new Float32Array(WATER_COUNT * 3);
+    const waterVels = [];
+    for (let i = 0; i < WATER_COUNT; i++) {
+      waterPos[i * 3 + 1] = -100;
+      waterVels.push({ x: 0, y: 0, z: 0, life: 0 });
+    }
+    waterGeo.setAttribute('position', new THREE.BufferAttribute(waterPos, 3));
+    const waterMat = new THREE.PointsMaterial({
+      color: 0x67e8f9,
+      size: 0.08,
+      transparent: true,
+      opacity: 0.85
+    });
+    const waterParticles = new THREE.Points(waterGeo, waterMat);
+    scene.add(waterParticles);
+    let isWaterLeakingActive = false;
+
+    // Fuljhadi Sparkler Particle System
+    const SPARK_COUNT = 180;
+    function createSparkSystem() {
+      const geo = new THREE.BufferGeometry();
+      const pos = new Float32Array(SPARK_COUNT * 3);
+      const vels = [];
+      for (let i = 0; i < SPARK_COUNT; i++) {
+        pos[i * 3 + 1] = -100;
+        vels.push({ x: 0, y: 0, z: 0, life: 0 });
+      }
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      const mat = new THREE.PointsMaterial({
+        color: 0xffea79,
+        size: 0.07,
+        blending: THREE.AdditiveBlending,
+        transparent: true
+      });
+      const points = new THREE.Points(geo, mat);
+      scene.add(points);
+      return { geo, pos, vels, points };
+    }
+    const girlSparks = createSparkSystem();
+    const boySparks = createSparkSystem();
+    let areSparklersActive = false;
+
+    /* =====================================================================
+       7. STEP-BY-STEP STORY CONTROLLER WITH SCRIPTED DIALOGUES
+       ===================================================================== */
+    const STORY_STEPS = [
+      {
+        id: 0,
+        speaker: "Roo",
+        role: "roo",
+        text: "“I knew it that you must be somewhere here only watching the northern lights, Kinn! ✨”",
+        duration: 7.0,
+        targetCam: new THREE.Vector3(1.2, 3.4, 7.8),
+        targetLook: new THREE.Vector3(0, 1.8, -1.0)
+      },
+      {
+        id: 1,
+        speaker: "Roo",
+        role: "roo",
+        text: "“It's Diwali today, that's why I came here! And guess what do I have?? 🎁”",
+        duration: 6.8,
+        targetCam: new THREE.Vector3(0.6, 2.9, 5.5),
+        targetLook: new THREE.Vector3(0, 1.9, 0)
+      },
+      {
+        id: 2,
+        speaker: "Kinn",
+        role: "kinn",
+        text: "“Hmm... let me guess... is it Rasgulla? Or maybe a box of chocolates? 🍫🤔”",
+        duration: 7.2,
+        targetCam: new THREE.Vector3(-0.85, 2.6, 4.4),
+        targetLook: new THREE.Vector3(-0.85, 2.1, 0)
+      },
+      {
+        id: 3,
+        speaker: "Roo",
+        role: "roo",
+        text: "“Nope! It’s your favorite sweet — Kaju Katli! 🍬✨ I brought this sweet just for you!”",
+        duration: 7.5,
+        targetCam: new THREE.Vector3(0.0, 2.8, 4.5),
+        targetLook: new THREE.Vector3(-0.2, 2.0, 0)
+      },
+      {
+        id: 4,
+        speaker: "Kinn",
+        role: "kinn",
+        text: "“OMG, thank you so much Roo!! 🥹❤️ *nom nom nom* It's so delicious!”",
+        duration: 7.5,
+        targetCam: new THREE.Vector3(-0.5, 2.6, 4.0),
+        targetLook: new THREE.Vector3(-0.5, 2.0, 0)
+      },
+      {
+        id: 5,
+        speaker: "Roo",
+        role: "roo",
+        text: "“Do you want some water? 🥛”",
+        duration: 5.5,
+        targetCam: new THREE.Vector3(0.2, 2.8, 4.8),
+        targetLook: new THREE.Vector3(0, 2.0, 0)
+      },
+      {
+        id: 6,
+        speaker: "Kinn",
+        role: "kinn",
+        text: "“Yes please, I really need water!”",
+        duration: 5.5,
+        targetCam: new THREE.Vector3(-0.6, 2.6, 4.2),
+        targetLook: new THREE.Vector3(-0.6, 2.0, 0)
+      },
+      {
+        id: 7,
+        speaker: "Kinn",
+        role: "kinn",
+        text: "“*sips* ... WAIT!! Ohh noo, water is leaking from my dimples!! 😱💦”",
+        duration: 8.0,
+        targetCam: new THREE.Vector3(-0.35, 2.45, 3.5),
+        targetLook: new THREE.Vector3(-0.35, 2.1, 0)
+      },
+      {
+        id: 8,
+        speaker: "Roo & Kinn",
+        role: "both",
+        text: "“Hahahaha! 🤣🤣 Both of us can’t stop laughing!”",
+        duration: 7.0,
+        targetCam: new THREE.Vector3(0, 3.0, 5.2),
+        targetLook: new THREE.Vector3(0, 1.9, 0)
+      },
+      {
+        id: 9,
+        speaker: "Roo & Kinn",
+        role: "both",
+        text: "“Let's light up our Diwali Phuljhadis together under the Northern Lights! ✨🎆”",
+        duration: 8.0,
+        targetCam: new THREE.Vector3(0, 3.4, 6.2),
+        targetLook: new THREE.Vector3(0, 1.9, 0)
+      }
+    ];
+
+    let currentStepIndex = 0;
+    let stepTimer = 0;
+    let isAutoAdvancing = true;
+    let isFinaleOpen = false;
+
+    const narratorBody = document.getElementById('narrator-body');
+    const speakerBadge = document.getElementById('speaker-badge');
+    const speakerName = document.getElementById('speaker-name');
+    const speakerIcon = document.getElementById('speaker-icon');
+    const stepProgressBar = document.getElementById('step-progress-bar');
+    const prevBtn = document.getElementById('prev-step-btn');
+    const nextBtn = document.getElementById('next-step-btn');
+    const nextBtnText = document.getElementById('next-btn-text');
+    const emoteContainer = document.getElementById('emote-container');
+    const finaleModal = document.getElementById('finale-modal');
+
+    function displayEmote(emoji, worldPos) {
+      const p = worldPos.clone();
+      p.y += 1.6;
+      p.project(camera);
+      const x = (p.x * 0.5 + 0.5) * window.innerWidth;
+      const y = (-(p.y * 0.5) + 0.5) * window.innerHeight;
+
+      const el = document.createElement('div');
+      el.className = 'absolute text-4xl pointer-events-none floating-emote';
+      el.textContent = emoji;
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      emoteContainer.appendChild(el);
+      setTimeout(() => el.remove(), 1400);
+    }
+
+    function applyStep(index) {
+      currentStepIndex = Math.max(0, Math.min(STORY_STEPS.length - 1, index));
+      stepTimer = 0;
+      const step = STORY_STEPS[currentStepIndex];
+
+      // Update speaker badge theme
+      if (step.role === "roo") {
+        speakerBadge.className = "flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-bold tracking-wide transition-all duration-200 bg-sky-500/20 text-sky-300 border border-sky-400/40";
+        speakerIcon.textContent = "👦🏽";
+        speakerName.textContent = "Roo";
+      } else if (step.role === "kinn") {
+        speakerBadge.className = "flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-bold tracking-wide transition-all duration-200 bg-rose-500/20 text-rose-300 border border-rose-400/40";
+        speakerIcon.textContent = "👧🏻";
+        speakerName.textContent = "Kinn (with Dimples)";
+      } else {
+        speakerBadge.className = "flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-bold tracking-wide transition-all duration-200 bg-amber-500/20 text-amber-300 border border-amber-400/40";
+        speakerIcon.textContent = "✨";
+        speakerName.textContent = "Roo & Kinn";
+      }
+
+      // Update UI texts
+      narratorBody.style.opacity = '0';
+      setTimeout(() => {
+        narratorBody.textContent = step.text;
+        narratorBody.style.opacity = '1';
+      }, 150);
+
+      prevBtn.disabled = (currentStepIndex === 0);
+      nextBtnText.textContent = (currentStepIndex === STORY_STEPS.length - 1) ? "Diwali Blessing" : "Next";
+
+      // Reset specific transient action states
+      isWaterLeakingActive = false;
+      areSparklersActive = false;
+      girlFuljhadi.root.visible = false;
+      boyFuljhadi.root.visible = false;
+
+      // Handle step-specific prop positions & sounds
+      if (currentStepIndex === 0) {
+        // Roo enters
+        kajuKatliProp.visible = false;
+        waterGlassProp.visible = false;
+        audio.playSparkle();
+      } else if (currentStepIndex === 1) {
+        // Guess what do I have
+        kajuKatliProp.visible = false;
+        waterGlassProp.visible = false;
+        boy.root.position.set(0.95, 0, -0.2);
+        boy.root.rotation.y = -1.1;
+      } else if (currentStepIndex === 2) {
+        // Kinn guesses wrong
+        kajuKatliProp.visible = false;
+        waterGlassProp.visible = false;
+        displayEmote('🍫', girl.head.position);
+        displayEmote('🤔', girl.head.position);
+      } else if (currentStepIndex === 3) {
+        // Handover sweet
+        kajuKatliProp.visible = true;
+        waterGlassProp.visible = false;
+        audio.playSparkle();
+      } else if (currentStepIndex === 4) {
+        // She eats Kaju Katli
+        kajuKatliProp.visible = true;
+        waterGlassProp.visible = false;
+        audio.playEatChomp();
+        displayEmote('🍬', girl.head.position);
+        displayEmote('❤️', girl.head.position);
+      } else if (currentStepIndex === 5) {
+        // Roo offers water
+        kajuKatliProp.visible = false;
+        waterGlassProp.visible = true;
+      } else if (currentStepIndex === 6) {
+        // Kinn says yes please
+        kajuKatliProp.visible = false;
+        waterGlassProp.visible = true;
+      } else if (currentStepIndex === 7) {
+        // Drinking & Dimple leak!
+        kajuKatliProp.visible = false;
+        waterGlassProp.visible = true;
+        isWaterLeakingActive = true;
+        audio.playWaterSplash();
+        displayEmote('😱', girl.head.position);
+        displayEmote('💦', girl.head.position);
+      } else if (currentStepIndex === 8) {
+        // Both laughing
+        kajuKatliProp.visible = false;
+        waterGlassProp.visible = false;
+        isWaterLeakingActive = false;
+        audio.playLaughJoy();
+        displayEmote('😂', girl.head.position);
+        displayEmote('🤣', boy.head.position);
+      } else if (currentStepIndex === 9) {
+        // Sparklers (Phuljhadi)
+        kajuKatliProp.visible = false;
+        waterGlassProp.visible = false;
+        girlFuljhadi.root.visible = true;
+        boyFuljhadi.root.visible = true;
+        areSparklersActive = true;
+        audio.playSparklerFlicker();
+      }
+    }
+
+    function showFinale() {
+      isFinaleOpen = true;
+      audio.playFinaleFanfare();
+      finaleModal.classList.remove('opacity-0', 'pointer-events-none');
+      finaleModal.querySelector('div').classList.remove('scale-95');
+      finaleModal.querySelector('div').classList.add('scale-100');
+    }
+
+    function hideFinale() {
+      isFinaleOpen = false;
+      finaleModal.classList.add('opacity-0', 'pointer-events-none');
+      finaleModal.querySelector('div').classList.remove('scale-100');
+      finaleModal.querySelector('div').classList.add('scale-95');
+    }
+
+    // Step Nav Listeners
+    prevBtn.addEventListener('click', () => {
+      audio.init();
+      applyStep(currentStepIndex - 1);
+    });
+    nextBtn.addEventListener('click', () => {
+      audio.init();
+      if (currentStepIndex < STORY_STEPS.length - 1) {
+        applyStep(currentStepIndex + 1);
+      } else {
+        showFinale();
+      }
+    });
+
+    /* =====================================================================
+       8. MAIN ANIMATION & LOGIC LOOP
+       ===================================================================== */
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const delta = clock.getDelta();
+      const elapsed = clock.getElapsedTime();
+
+      // Northern Lights Shader uniform update
+      auroraUniforms.uTime.value = elapsed;
+
+      // Diya flicker
+      diyas.forEach(d => {
+        const flicker = Math.sin(elapsed * 10 + d.offset) * 0.25;
+        d.pLight.intensity = Math.max(0.8, d.baseInt + flicker);
+        d.flame.scale.y = 1.0 + flicker * 0.35;
+      });
+
+      // Handle Story Step Progress & Auto Pacing
+      const currentStep = STORY_STEPS[currentStepIndex];
+      stepTimer += delta;
+      const progressPercent = Math.min(100, (stepTimer / currentStep.duration) * 100);
+      stepProgressBar.style.width = `${progressPercent}%`;
+
+      if (stepTimer >= currentStep.duration && isAutoAdvancing && !isFinaleOpen) {
+        if (currentStepIndex < STORY_STEPS.length - 1) {
+          applyStep(currentStepIndex + 1);
+        } else {
+          showFinale();
+        }
+      }
+
+      // Smooth Camera tracking
+      if (controls.enabled) {
+        controls.update();
+      } else {
+        camera.position.lerp(currentStep.targetCam, 0.04);
+        cameraTarget.lerp(currentStep.targetLook, 0.04);
+        camera.lookAt(cameraTarget);
+      }
+
+      // -------------------------------------------------------------
+      // CHARACTER ANIMATIONS PER SCRIPT BEAT
+      // -------------------------------------------------------------
+      // Base breathing
+      girl.torso.position.y = 1.65 + Math.sin(elapsed * 3) * 0.025;
+      boy.torso.position.y = 1.65 + Math.sin(elapsed * 3 + 1) * 0.025;
+
+      // BEAT 0: Roo arrives under Northern Lights
+      if (currentStepIndex === 0) {
+        const walkFrac = Math.min(1, stepTimer / (currentStep.duration * 0.7));
+        boy.root.position.z = THREE.MathUtils.lerp(-4.5, 0.0, walkFrac);
+        boy.root.position.x = 0.75;
+        boy.root.rotation.y = THREE.MathUtils.lerp(0, -0.4, walkFrac);
+
+        const walkSwing = Math.sin(elapsed * 9);
+        boy.leftLeg.rotation.x = walkSwing * 0.65;
+        boy.rightLeg.rotation.x = -walkSwing * 0.65;
+        boy.leftArm.rotation.x = -walkSwing * 0.55;
+        boy.rightArm.rotation.x = walkSwing * 0.55;
+
+        // Kinn smiles and turns toward Roo
+        girl.head.rotation.y = THREE.MathUtils.lerp(0, -0.3, walkFrac);
+      }
+
+      // BEAT 1: Roo asks "guess what do I have??"
+      else if (currentStepIndex === 1) {
+        boy.leftLeg.rotation.x = 0;
+        boy.rightLeg.rotation.x = 0;
+        boy.root.position.set(0.75, 0, 0.0);
+        boy.root.rotation.y = -0.4;
+
+        // Inquisitive animated hand shrug
+        boy.rightArm.rotation.x = -0.9 + Math.sin(elapsed * 4) * 0.15;
+        boy.leftArm.rotation.x = -0.8 + Math.cos(elapsed * 4) * 0.15;
+        girl.head.rotation.y = -0.3;
+      }
+
+      // BEAT 1: Roo asks "guess what do I have??"
+      else if (currentStepIndex === 1) {
+        boy.leftLeg.rotation.x = 0;
+        boy.rightLeg.rotation.x = 0;
+        boy.root.position.set(0.7, 0, 0.0);
+        boy.root.rotation.y = -1.15;
+
+        // Inquisitive animated hand shrug
+        boy.rightArm.rotation.x = -0.9 + Math.sin(elapsed * 4) * 0.15;
+        boy.leftArm.rotation.x = -0.8 + Math.cos(elapsed * 4) * 0.15;
+        girl.head.rotation.y = -0.4;
+      }
+
+      // BEAT 2: Kinn takes a wild wrong guess (Rasgulla / Chocolates)
+      else if (currentStepIndex === 2) {
+        boy.rightArm.rotation.x = -0.3;
+        boy.leftArm.rotation.x = -0.3;
+
+        // Kinn thinking pose: hand to chin, tilting head
+        girl.rightArm.rotation.x = -1.8;
+        girl.rightArm.rotation.z = -0.35;
+        girl.head.rotation.z = Math.sin(elapsed * 3) * 0.12;
+      }
+
+      // BEAT 3: Roo reveals Kaju Katli & offers it
+      else if (currentStepIndex === 3) {
+        girl.rightArm.rotation.set(-0.7, 0, 0.2); // Reaching out
+
+        // Roo extends arm offering sweet
+        boy.rightArm.rotation.x = -1.25;
+        boy.rightArm.rotation.z = -0.25;
+
+        const boyHandPos = new THREE.Vector3();
+        boy.rightHandSocket.getWorldPosition(boyHandPos);
+        kajuKatliProp.position.copy(boyHandPos);
+      }
+
+      // BEAT 4: Kinn says thanks and munches Kaju Katli
+      else if (currentStepIndex === 4) {
+        boy.rightArm.rotation.x = -0.35; // Roo lowers arm warmly
+
+        // Kinn holds sweet to mouth
+        girl.rightArm.rotation.x = -1.75;
+        girl.rightArm.rotation.z = 0.25;
+
+        const girlHandPos = new THREE.Vector3();
+        girl.rightHandSocket.getWorldPosition(girlHandPos);
+        kajuKatliProp.position.copy(girlHandPos);
+
+        // Chewing nod & joyful hop
+        girl.head.rotation.x = Math.sin(elapsed * 7) * 0.12;
+        girl.torso.position.y = 1.65 + Math.abs(Math.sin(elapsed * 7)) * 0.08;
+      }
+
+      // BEAT 5: Roo asks "Do you want some water?"
+      else if (currentStepIndex === 5) {
+        girl.rightArm.rotation.set(-0.2, 0, 0.1);
+
+        // Roo pulls out glass and holds it forward
+        boy.rightArm.rotation.x = -1.1;
+        boy.rightArm.rotation.z = -0.25;
+
+        const boyHandPos = new THREE.Vector3();
+        boy.rightHandSocket.getWorldPosition(boyHandPos);
+        waterGlassProp.position.copy(boyHandPos);
+        waterGlassProp.rotation.x = 0;
+      }
+
+      // BEAT 6: Kinn accepts: "Yes please, I really need water!"
+      else if (currentStepIndex === 6) {
+        boy.rightArm.rotation.x = -1.1;
+        girl.rightArm.rotation.x = -0.9; // Reaching for glass
+
+        const boyHandPos = new THREE.Vector3();
+        boy.rightHandSocket.getWorldPosition(boyHandPos);
+        waterGlassProp.position.copy(boyHandPos);
+      }
+
+      // BEAT 7: Kinn drinks & DIMPLE LEAK GAG!
+      else if (currentStepIndex === 7) {
+        boy.rightArm.rotation.x = -0.3; // Roo watches
+
+        // Kinn tilts head and glass back to drink
+        girl.rightArm.rotation.x = -1.88;
+        girl.rightArm.rotation.y = 0.35;
+        girl.head.rotation.x = -0.2; // Head back
+
+        const girlHandPos = new THREE.Vector3();
+        girl.rightHandSocket.getWorldPosition(girlHandPos);
+        waterGlassProp.position.copy(girlHandPos);
+        waterGlassProp.rotation.x = -0.55; // Tilted glass
+
+        isWaterLeakingActive = true;
+        if (Math.random() < 0.16) {
+          audio.playWaterSplash();
+        }
+      }
+
+      // BEAT 8: Belly laugh together
+      else if (currentStepIndex === 8) {
+        waterGlassProp.visible = false;
+        isWaterLeakingActive = false;
+
+        // Bouncing Roblox laugh for both
+        const laughBounce = Math.sin(elapsed * 16) * 0.13;
+        girl.torso.position.y = 1.65 + Math.abs(laughBounce);
+        girl.head.rotation.x = laughBounce * 1.6;
+        girl.leftArm.rotation.x = -0.6 + laughBounce * 2.2;
+        girl.rightArm.rotation.x = -0.6 - laughBounce * 2.2;
+
+        boy.torso.position.y = 1.65 + Math.abs(laughBounce);
+        boy.head.rotation.x = laughBounce * 1.6;
+        boy.leftArm.rotation.x = -0.5 - laughBounce * 2.2;
+        boy.rightArm.rotation.x = -0.5 + laughBounce * 2.2;
+      }
+
+      // BEAT 9: Phuljhadi sparklers under Aurora
+      else if (currentStepIndex === 9) {
+        girlFuljhadi.root.visible = true;
+        boyFuljhadi.root.visible = true;
+        areSparklersActive = true;
+
+        girl.rightArm.rotation.x = -1.25 + Math.sin(elapsed * 3.8) * 0.35;
+        girl.rightArm.rotation.z = Math.cos(elapsed * 3.8) * 0.35;
+
+        boy.rightArm.rotation.x = -1.25 + Math.cos(elapsed * 4.0) * 0.35;
+        boy.rightArm.rotation.z = -Math.sin(elapsed * 4.0) * 0.35;
+
+        if (Math.random() < 0.28) {
+          audio.playSparklerFlicker();
+        }
+      }
+
+      // -------------------------------------------------------------
+      // PARTICLE SIMULATION: WATER DIMPLE LEAKAGE
+      // -------------------------------------------------------------
+      const waterPosArray = waterGeo.attributes.position.array;
+      if (isWaterLeakingActive) {
+        const dimpleLocal = new THREE.Vector3(0.44, 2.36, 0.38);
+        dimpleLocal.applyAxisAngle(new THREE.Vector3(0, 1, 0), girl.root.rotation.y);
+        dimpleLocal.add(girl.root.position);
+
+        for (let k = 0; k < 5; k++) {
+          const idx = Math.floor(Math.random() * WATER_COUNT);
+          waterPosArray[idx * 3] = dimpleLocal.x;
+          waterPosArray[idx * 3 + 1] = dimpleLocal.y;
+          waterPosArray[idx * 3 + 2] = dimpleLocal.z;
+
+          waterVels[idx] = {
+            x: (0.9 + Math.random() * 0.7) * (girl.root.rotation.y > 0 ? 1 : -1) * 0.08,
+            y: (0.3 + Math.random() * 0.3) * 0.05,
+            z: (Math.random() - 0.5) * 0.04,
+            life: 1.0
+          };
+        }
+      }
+
+      for (let i = 0; i < WATER_COUNT; i++) {
+        const vel = waterVels[i];
+        if (vel.life > 0) {
+          waterPosArray[i * 3] += vel.x;
+          waterPosArray[i * 3 + 1] += vel.y;
+          waterPosArray[i * 3 + 2] += vel.z;
+          vel.y -= 0.007; // gravity
+          vel.life -= delta * 1.6;
+
+          if (waterPosArray[i * 3 + 1] <= 0.04) {
+            waterPosArray[i * 3 + 1] = 0.04;
+            vel.x *= 0.4;
+            vel.z *= 0.4;
+          }
+        } else {
+          waterPosArray[i * 3 + 1] = -100;
+        }
+      }
+      waterGeo.attributes.position.needsUpdate = true;
+
+      // -------------------------------------------------------------
+      // PARTICLE SIMULATION: FULJHADI SPARKS
+      // -------------------------------------------------------------
+      function updateSparklers(system, obj) {
+        const pArray = system.pos;
+        const vels = system.vels;
+        const tipPos = new THREE.Vector3();
+        obj.tip.getWorldPosition(tipPos);
+
+        if (areSparklersActive) {
+          obj.sparkLight.intensity = 2.0 + Math.random() * 1.6;
+
+          for (let k = 0; k < 6; k++) {
+            const idx = Math.floor(Math.random() * SPARK_COUNT);
+            pArray[idx * 3] = tipPos.x;
+            pArray[idx * 3 + 1] = tipPos.y;
+            pArray[idx * 3 + 2] = tipPos.z;
+
+            const ang = Math.random() * Math.PI * 2;
+            const elev = (Math.random() - 0.3) * Math.PI;
+            const spd = 0.05 + Math.random() * 0.08;
+            vels[idx] = {
+              x: Math.cos(elev) * Math.cos(ang) * spd,
+              y: Math.sin(elev) * spd,
+              z: Math.cos(elev) * Math.sin(ang) * spd,
+              life: 1.0
+            };
+          }
+        } else {
+          obj.sparkLight.intensity = 0;
+        }
+
+        for (let i = 0; i < SPARK_COUNT; i++) {
+          const v = vels[i];
+          if (v.life > 0) {
+            pArray[i * 3] += v.x;
+            pArray[i * 3 + 1] += v.y;
+            pArray[i * 3 + 2] += v.z;
+            v.y -= 0.0028;
+            v.life -= delta * 2.6;
+          } else {
+            pArray[i * 3 + 1] = -100;
+          }
+        }
+        system.geo.attributes.position.needsUpdate = true;
+      }
+
+      updateSparklers(girlSparks, girlFuljhadi);
+      updateSparklers(boySparks, boyFuljhadi);
+
+      renderer.render(scene, camera);
+    }
+
+    // Start on load
+    window.onload = function() {
+      applyStep(0);
+      animate();
+    };
+
+    // Responsive Canvas Resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    /* =====================================================================
+       9. UI BUTTON LISTENERS & CONTROLS
+       ==================================================================== */
+    document.getElementById('start-app-btn').addEventListener('click', () => {
+      audio.init();
+      audio.playSparkle();
+      document.getElementById('tap-to-start').classList.add('hidden');
+    });
+
+    const soundBtn = document.getElementById('sound-toggle-btn');
+    soundBtn.addEventListener('click', () => {
+      audio.init();
+      audio.muted = !audio.muted;
+      soundBtn.textContent = audio.muted ? '🔇' : '🔊';
+    });
+
+    const camBtn = document.getElementById('cam-toggle-btn');
+    const camText = document.getElementById('cam-mode-text');
+    camBtn.addEventListener('click', () => {
+      controls.enabled = !controls.enabled;
+      if (controls.enabled) {
+        camText.textContent = 'Auto Cam';
+        camBtn.classList.add('bg-emerald-500/30');
+      } else {
+        camText.textContent = 'Free Cam';
+        camBtn.classList.remove('bg-emerald-500/30');
+      }
+    });
+
+    document.getElementById('restart-story-btn').addEventListener('click', () => {
+      audio.init();
+      controls.enabled = false;
+      camText.textContent = 'Free Cam';
+      hideFinale();
+      applyStep(0);
+    });
+
+    document.getElementById('modal-replay-btn').addEventListener('click', () => {
+      audio.init();
+      controls.enabled = false;
+      camText.textContent = 'Free Cam';
+      hideFinale();
+      applyStep(0);
+    });
+  </script>
+</body>
+</html>
